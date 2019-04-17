@@ -124,10 +124,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Environment.cpp" />
+    <ClCompile Include="..\..\src\helpers.cpp" />
     <ClCompile Include="..\..\src\main.cpp" />
+    <ClCompile Include="..\..\src\Behavior.cpp" />
+    <ClCompile Include="..\..\src\Cost.cpp" />
+    <ClCompile Include="..\..\src\Map.cpp" />
+    <ClCompile Include="..\..\src\Trajectory.cpp" />
+    <ClCompile Include="..\..\src\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\Environment.h" />
     <ClInclude Include="..\..\src\helpers.h" />
+    <ClInclude Include="..\..\src\Behavior.h" />
+    <ClInclude Include="..\..\src\Cost.h" />
+    <ClInclude Include="..\..\src\Map.h" />
+    <ClInclude Include="..\..\src\Trajectory.h" />
+    <ClInclude Include="..\..\src\Vehicle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

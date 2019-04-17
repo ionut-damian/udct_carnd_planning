@@ -5,8 +5,11 @@
 #include <vector>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
-#include "helpers.h"
 #include "json.hpp"
+
+#include "helpers.h"
+#include "Behavior.h"
+#include "Map.h"
 
 // for convenience
 using nlohmann::json;
@@ -18,11 +21,7 @@ int main()
     uWS::Hub h;
 
     // Load up map values for waypoint's x,y,s and d normalized normal vectors
-    vector<double> map_waypoints_x;
-    vector<double> map_waypoints_y;
-    vector<double> map_waypoints_s;
-    vector<double> map_waypoints_dx;
-    vector<double> map_waypoints_dy;
+    Map* map = Map::getInstance();
 
     // Waypoint map to read from  
 #ifdef _MSC_VER    
@@ -49,24 +48,20 @@ int main()
         iss >> s;
         iss >> d_x;
         iss >> d_y;
-        map_waypoints_x.push_back(x);
-        map_waypoints_y.push_back(y);
-        map_waypoints_s.push_back(s);
-        map_waypoints_dx.push_back(d_x);
-        map_waypoints_dy.push_back(d_y);
+        map->points_x.push_back(x);
+        map->points_y.push_back(y);
+        map->points_s.push_back(s);
+        map->points_dx.push_back(d_x);
+        map->points_dy.push_back(d_y);
     }
+           
+    Behavior planner(3, 50, 10, 0, 10);    
 
 #ifdef _MSC_VER    
-    h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-        &map_waypoints_dx, &map_waypoints_dy]
-        (uWS::WebSocket<uWS::SERVER>* ws, char *data, size_t length,
-            uWS::OpCode opCode)
+    h.onMessage([](uWS::WebSocket<uWS::SERVER>* ws, char *data, size_t length, uWS::OpCode opCode)
     {
 #else
-    h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-        &map_waypoints_dx, &map_waypoints_dy]
-        (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
-            uWS::OpCode opCode)
+    h.onMessage([](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
     {
 #endif
         // "42" at the start of the message means there's a websocket message event.
@@ -102,9 +97,21 @@ int main()
                     double end_path_s = j[1]["end_path_s"];
                     double end_path_d = j[1]["end_path_d"];
 
+
+
                     // Sensor Fusion Data, a list of all other cars on the same side 
                     //   of the road.
                     auto sensor_fusion = j[1]["sensor_fusion"];
+
+                    vector<vector<double>> vehicles;
+                    for (int i = 0; i < sensor_fusion.size(); i++)
+                    {
+                        vehicles.push_back(vector<double>());
+                        for (int j = 0; j < sensor_fusion[i].size(); j++)
+                        {
+                            vehicles.back().push_back(sensor_fusion[i][j]);
+                        }
+                    }
 
                     json msgJson;
 
