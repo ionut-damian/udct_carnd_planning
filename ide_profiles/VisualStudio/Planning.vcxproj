@@ -134,6 +134,7 @@
     <ClCompile Include="..\..\src\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\src\config.h" />
     <ClInclude Include="..\..\src\Environment.h" />
     <ClInclude Include="..\..\src\helpers.h" />
     <ClInclude Include="..\..\src\Behavior.h" />

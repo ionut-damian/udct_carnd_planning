@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "helpers.h"
+#include "config.h"
 
 
 Trajectory::Trajectory()
@@ -27,8 +28,11 @@ KeepLaneTrajectory::KeepLaneTrajectory(Vehicle& vehicle, map<int, vector<Vehicle
     target_lane = vehicle.lane;
 
     // Generate a keep lane trajectory.
-    waypoints.push_back(Vehicle(vehicle)); //current position
-    waypoints.push_back(get_kinematics(vehicle, predictions, max_acceleration, target_speed)); //next positio
+    //waypoints.push_back(Vehicle(vehicle)); //current position
+    waypoints.push_back(get_kinematics(vehicle, vehicle.lane, TIME_PER_FRAME, predictions, max_acceleration, target_speed));
+
+    for (int i = 1; i < PREDICTION_WINDOW; i++)
+        waypoints.push_back(get_kinematics(waypoints.back(), waypoints.back().lane, TIME_PER_FRAME, predictions, max_acceleration, target_speed));
 }
 
 PrepLaneChangeTrajectory::PrepLaneChangeTrajectory(Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed)
@@ -42,7 +46,9 @@ PrepLaneChangeTrajectory::PrepLaneChangeTrajectory(Vehicle& vehicle, int target_
     Vehicle vehicle_behind;
 
     waypoints.push_back(Vehicle(vehicle)); //current position
-    waypoints.push_back(get_kinematics(vehicle, predictions, max_acceleration, target_speed)); //next position
+
+    for (int i = 1; i < PREDICTION_WINDOW; i++)
+        waypoints.push_back(get_kinematics(waypoints.back(), waypoints.back().lane, TIME_PER_FRAME, predictions, max_acceleration, target_speed));
 
 
     // disable speed adjustment since it leads to deadlock wihtout a free spot detection
@@ -95,57 +101,94 @@ LaneChangeTrajectory::LaneChangeTrajectory(Vehicle& vehicle, int target_lane, ma
     }
 
     waypoints.push_back(Vehicle(vehicle)); //current position
-    waypoints.push_back(get_kinematics(vehicle, predictions, max_acceleration, target_speed)); //next position
+
+    for (int i = 1; i < PREDICTION_WINDOW; i++)
+        waypoints.push_back(get_kinematics(waypoints.back(), waypoints.back().lane, TIME_PER_FRAME, predictions, max_acceleration, target_speed));
 }
 
-Vehicle Trajectory::get_kinematics(Vehicle& vehicle, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed)
+Vehicle Trajectory::get_kinematics(Vehicle& vehicle, int lane, double t, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed)
 {
     // Gets next timestep kinematics (position, velocity, acceleration) 
     //   for a given lane. Tries to choose the maximum velocity and acceleration, 
     //   given other vehicle positions and accel/velocity constraints.
-    float max_velocity_accel_limit_x = max_acceleration + vehicle.vx;
-    float max_velocity_accel_limit_y = max_acceleration + vehicle.vy;
-    float new_position_x, new_position_y;
-    float new_velocity_x, new_velocity_y;
-    float new_accel_x, new_accel_y;
-    
-    float d = vehicle.lane * 4.0 + 2.0;
+    double new_position_x, new_position_y;
+    double new_velocity;
+
+    double current_velocity = vehicle.get2DVelocity();
+    double max_velocity_accel_limit = current_velocity + max_acceleration *t;
+    double min_velocity_accel_limit = current_velocity - max_acceleration *t;
     
     Vehicle vehicle_ahead;
-    Vehicle vehicle_behind;
-
-
-    if (vehicle.get_vehicle_ahead(predictions, vehicle.lane, vehicle_ahead))
+    
+    if (vehicle.get_vehicle_ahead(predictions, lane, vehicle_ahead))
     {
-        if (vehicle.get_vehicle_behind(predictions, vehicle.lane, vehicle_behind))
+        double dist_s = vehicle_ahead.s - vehicle.s - vehicle.preferred_buffer;
+        if (dist_s < 0)
+            new_velocity = 0;
+
+        //double ttc = dist_s / current_velocity;
+
+        /*if (ttc > t)
         {
-            // must travel at the speed of traffic, regardless of preferred buffer
-            new_velocity_x = vehicle_ahead.vx;
-            new_velocity_y = vehicle_ahead.vy;
+            new_velocity = target_speed * (1.0 - t / ttc) + vehicle_ahead.get2DVelocity() * (t / ttc);
         }
         else
         {
-            double max_pos_s = vehicle_ahead.s - vehicle.s - vehicle.preferred_buffer;
-            vector<double> max_pos = getXY(max_pos_s, vehicle.lane * 4.0 + 2.0, Map::getInstance()->points_s, Map::getInstance()->points_y, Map::getInstance()->points_y);
+            new_velocity = vehicle_ahead.get2DVelocity();
+        }*/
 
-            float max_velocity_in_front_x = max_pos[0] + vehicle_ahead.vx - 0.5 * (vehicle.ax);
-            float max_velocity_in_front_y = max_pos[1] + vehicle_ahead.vy - 0.5 * (vehicle.ay);
-
-            new_velocity_x = std::min(std::min(max_velocity_in_front_x, max_velocity_accel_limit_x), target_speed);
-            new_velocity_x = std::min(std::min(max_velocity_in_front_x, max_velocity_accel_limit_x), target_speed);
+        double dist_thresh = 20;
+        if (dist_s < dist_thresh)
+        {
+            new_velocity = target_speed * (dist_s / dist_thresh) + vehicle_ahead.get2DVelocity() * (1.0 - dist_s / dist_thresh);
         }
+        else
+        {
+            new_velocity = target_speed;
+        }
+
+        //new_velocity = dist_s + vehicle_ahead.get2DVelocity() * t - 0.5 * vehicle.get2DAcceleration() * t*t;
+        if (new_velocity < 0)
+            new_velocity = 0;
+
+        new_velocity = std::min(std::min(new_velocity, max_velocity_accel_limit), (double)target_speed);
+        new_velocity = std::max(min_velocity_accel_limit, new_velocity);
+
     }
     else
     {
-        new_velocity_x = std::min(max_velocity_accel_limit_x, target_speed);
-        new_velocity_y = std::min(max_velocity_accel_limit_y, target_speed);
+        new_velocity = std::min(max_velocity_accel_limit, (double)target_speed);
     }
 
-    new_position_x = vehicle.x + new_velocity_x + new_accel_x / 2.0;
-    new_position_y = vehicle.y + new_velocity_y + new_accel_y / 2.0;
+    //cap velocity
+    double new_accel = (new_velocity - current_velocity) / t;
+    double new_position_s = vehicle.s + current_velocity * t + new_accel * t*t / 2.0;
+
+    //float new_velocity_x = new_velocity * cos(vehicle.theta);
+    //float new_velocity_y = new_velocity * sin(vehicle.theta);
+
+    vector<double> new_position = getXY(new_position_s, vehicle.d, Map::getInstance()->points_s, Map::getInstance()->points_x, Map::getInstance()->points_y);
     
-    Vehicle new_vehicle(vehicle);
-    new_vehicle.update(new_position_x, new_position_y, new_velocity_x, new_velocity_y);
+    Vehicle new_vehicle;
+
+    new_vehicle.x = new_position[0];
+    new_vehicle.y = new_position[1];
+    new_vehicle.s = new_position_s;
+    new_vehicle.d = vehicle.d;
+
+    new_vehicle.vx = (new_vehicle.x - vehicle.x) / t;
+    new_vehicle.vy = (new_vehicle.y - vehicle.y) / t;
+
+    new_vehicle.ax = (new_vehicle.vx - vehicle.vx) / t;
+    new_vehicle.ay = (new_vehicle.vy - vehicle.vy) / t;
+
+    new_vehicle.theta = atan2(new_vehicle.y - vehicle.y, new_vehicle.x - vehicle.x);
+    if (new_vehicle.theta < 0)
+        new_vehicle.theta = 360.0 - abs(new_vehicle.theta);
+
+
+    //Vehicle new_vehicle(vehicle);
+    //new_vehicle.update(new_position[0], new_position[1]);
 
     return new_vehicle;
 }

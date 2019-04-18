@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <algorithm>
 #include <vector>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
@@ -9,7 +10,11 @@
 
 #include "helpers.h"
 #include "Behavior.h"
+#include "Environment.h"
 #include "Map.h"
+#include "config.h"
+
+#define MAX_OVERLAP_PREV_PATH 10u
 
 // for convenience
 using nlohmann::json;
@@ -55,13 +60,14 @@ int main()
         map->points_dy.push_back(d_y);
     }
            
-    Behavior planner(3, 50, 10, 0, 10);    
+    Behavior planner(3, 20, 10, 0, 10);    
+    Environment environment;
 
 #ifdef _MSC_VER    
-    h.onMessage([](uWS::WebSocket<uWS::SERVER>* ws, char *data, size_t length, uWS::OpCode opCode)
+    h.onMessage([&planner, &environment](uWS::WebSocket<uWS::SERVER>* ws, char *data, size_t length, uWS::OpCode opCode)
     {
 #else
-    h.onMessage([](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
+    h.onMessage([&planner, &environment](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode)
     {
 #endif
         // "42" at the start of the message means there's a websocket message event.
@@ -87,9 +93,12 @@ int main()
                     double car_y = j[1]["y"];
                     double car_s = j[1]["s"];
                     double car_d = j[1]["d"];
-                    double car_yaw = j[1]["yaw"];
-                    double car_speed = j[1]["speed"];
+                    double car_yaw = deg2rad(j[1]["yaw"]);
+                    double car_speed = (j[1]["speed"] * 1609.34) / 3600.0;
 
+                    double car_vx = cos(car_yaw) * car_speed;
+                    double car_vy = sin(car_yaw) * car_speed;
+                                       
                     // Previous path data given to the Planner
                     auto previous_path_x = j[1]["previous_path_x"];
                     auto previous_path_y = j[1]["previous_path_y"];
@@ -97,40 +106,67 @@ int main()
                     double end_path_s = j[1]["end_path_s"];
                     double end_path_d = j[1]["end_path_d"];
 
+                    vector<double> next_x_vals;
+                    vector<double> next_y_vals;
+                    //int path_size = std::min(previous_path_x.size(), MAX_OVERLAP_PREV_PATH);
+                    //for (int i = 0; i < path_size; ++i)
+                    //{
+                    //    next_x_vals.push_back(previous_path_x[i]);
+                    //    next_y_vals.push_back(previous_path_y[i]);
+                    //}
 
+                    //if (path_size != 0)
+                    //{
+                    //    car_x = previous_path_x[path_size - 1];
+                    //    car_y = previous_path_y[path_size - 1];
+
+                    //    car_vx = (car_x - previous_path_x[path_size - 2]) / TIME_PER_FRAME;
+                    //    car_vy = (car_y - previous_path_y[path_size - 2]) / TIME_PER_FRAME;
+
+                    //    car_yaw = atan2(car_y - previous_path_y[path_size - 2], car_x - previous_path_x[path_size - 2]);
+                    //    if (car_yaw < 0)
+                    //        car_yaw = 360 - abs(car_yaw);
+                    //}
+
+                    //printf("in: x=%.2f, y=%.2f, v=%.2f\n", car_x, car_y, car_speed);
+                    planner.ego.update(car_x, car_y, car_vx, car_vy, car_yaw);      
+                    //planner.ego.update(car_x, car_y);
+
+                    //if (planner.ego.theta != car_yaw)
+                    //{
+                    //    //printf("WARN: unexpected theta (%.3f != %.3f)\n", rad2deg(planner.ego.theta), rad2deg(car_yaw));
+                    //    planner.ego.theta = car_yaw;
+                    //}
 
                     // Sensor Fusion Data, a list of all other cars on the same side 
                     //   of the road.
                     auto sensor_fusion = j[1]["sensor_fusion"];
-
-                    vector<vector<double>> vehicles;
                     for (int i = 0; i < sensor_fusion.size(); i++)
                     {
-                        vehicles.push_back(vector<double>());
-                        for (int j = 0; j < sensor_fusion[i].size(); j++)
-                        {
-                            vehicles.back().push_back(sensor_fusion[i][j]);
-                        }
+                        environment.updateVehicle(
+                            sensor_fusion[i][0], //id
+                            sensor_fusion[i][1], //x
+                            sensor_fusion[i][2], //y
+                            sensor_fusion[i][3], //vx
+                            sensor_fusion[i][4], //vy
+                            sensor_fusion[i][5], //s
+                            sensor_fusion[i][6]);//d
                     }
 
+                    //process
+                    Trajectory* traj = planner.choose_next_state(environment);
+                    //planner.ego.realize_next_state(traj->waypoints[0]);
+
+                    //output
                     json msgJson;
 
-                    vector<double> next_x_vals;
-                    vector<double> next_y_vals;
-
-                    /**
-                     * TODO: define a path made up of (x,y) points that the car will visit
-                     *   sequentially every .02 seconds
-                     */
-
-                    //TEST
-                    double dist_inc = 0.5;
-                    for (int i = 0; i < 50; ++i)
+                    for (int i = 0; i < traj->waypoints.size() - next_x_vals.size(); ++i)
                     {
-                        next_x_vals.push_back(car_x + (dist_inc*i)*cos(deg2rad(car_yaw)));
-                        next_y_vals.push_back(car_y + (dist_inc*i)*sin(deg2rad(car_yaw)));
+                        next_x_vals.push_back(traj->waypoints[i].x);
+                        next_y_vals.push_back(traj->waypoints[i].y);
                     }
-
+                    printf("out: x=%.2f, y=%.2f, yaw_in=%.2f, yaw=%.2f, v_in=%.2f, v=%.2f\n", traj->waypoints[0].x, traj->waypoints[0].y, rad2deg(car_yaw), rad2deg(traj->waypoints[0].theta), car_speed, traj->waypoints[0].get2DVelocity());
+                    //printf("out: x=%.2f, y=%.2f, v=%.2f\n", traj->waypoints[10].x, traj->waypoints[10].y, traj->waypoints[10].get2DVelocity());
 
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;

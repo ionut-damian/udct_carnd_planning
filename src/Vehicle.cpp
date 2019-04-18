@@ -2,6 +2,7 @@
 #include "Cost.h"
 #include "Trajectory.h"
 #include "helpers.h"
+#include "config.h"
 
 #include <algorithm>
 #include <iterator>
@@ -13,7 +14,19 @@ using std::string;
 using std::vector;
 
 // Initializes Vehicle
-Vehicle::Vehicle() {}
+Vehicle::Vehicle() 
+{
+    this->lane = 0;
+    this->x = 0;
+    this->y = 0;
+    this->vx = 0;
+    this->vy = 0;
+    this->ax = 0;
+    this->ay = 0;
+    this->theta = 0;
+    this->s = 0;
+    this->d = 0;
+}
 
 Vehicle::Vehicle(int lane, float x, float y, float vx, float vy, float ax, float ay)
 {
@@ -29,10 +42,9 @@ Vehicle::Vehicle(int lane, float x, float y, float vx, float vy, float ax, float
 
 Vehicle::~Vehicle() {}
 
-void Vehicle::update(float x, float y, float vx, float vy, float s, float d)
+void Vehicle::update(float x, float y, float vx, float vy, float s, float d, float ax, float ay, double theta)
 {
-    this->ax = this->vx - vx;
-    this->ay = this->vy - vy;
+    this->theta = theta;
 
     this->x = x;
     this->y = y;
@@ -40,25 +52,69 @@ void Vehicle::update(float x, float y, float vx, float vy, float s, float d)
     this->vy = vy;
     this->s = s;
     this->d = d;
+    this->ax = ax;
+    this->ay = ay;
+
+    this->lane = (int)this->d / (int)LANE_WIDTH;
 }
 
-void Vehicle::update(float x, float y, float vx, float vy)
+void Vehicle::update(float x, float y, float vx, float vy, float s, float d, float ax, float ay)
 {
-    this->ax = this->vx - vx;
-    this->ay = this->vy - vy;
+    this->theta = atan2(y - this->y, x - this->x);
+    if (theta < 0)
+        theta = 360 - abs(theta);
 
     this->x = x;
     this->y = y;
     this->vx = vx;
     this->vy = vy;
+    this->s = s;
+    this->d = d;
+    this->ax = ax;
+    this->ay = ay;
 
-    vector<double> new_frenet = getFrenet(x, y, 0, Map::getInstance()->points_x, Map::getInstance()->points_y);
-
-    this->s = new_frenet[0];
-    this->d = new_frenet[0];
+    this->lane = (int)this->d / (int)LANE_WIDTH;
 }
 
-Vehicle Vehicle::predict(int t)
+void Vehicle::update(float x, float y, float vx, float vy, double theta)
+{
+    vector<double> new_frenet = getFrenet(x, y, theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
+
+    update(x, y, vx, vy, new_frenet[0], new_frenet[1], 0, 0);
+}
+
+void Vehicle::update(float x, float y, float vx, float vy)
+{
+    this->theta = atan2(y - this->y, x - this->x);
+    if (theta < 0)
+        theta = 360 - abs(theta);
+
+    vector<double> new_frenet = getFrenet(x, y, this->theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
+
+    update(x, y, vx, vy, new_frenet[0], new_frenet[1], 0, 0);
+}
+
+void Vehicle::update(float x, float y)
+{
+    theta = atan2(y - this->y, x - this->x);
+    if (theta < 0)
+        theta = 360 - abs(theta);
+
+    vector<double> new_frenet = getFrenet(x, y, this->theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
+
+    this->x = x;
+    this->y = y;
+    //this->vx = x - this->x;
+    //this->vy = y - this->y;
+    this->s = new_frenet[0];
+    this->d = new_frenet[1];
+
+    this->lane = (int)this->d / (int)LANE_WIDTH;
+
+    //update(x, y, vx, vy, new_frenet[0], new_frenet[1]);
+}
+
+Vehicle Vehicle::predict(double t)
 {
     float new_x = this->x + this->vx*t + this->ax*t*t / 2.0f;
     float new_y = this->y + this->vy*t + this->ay*t*t / 2.0f;
@@ -133,14 +189,19 @@ vector<Vehicle> Vehicle::generate_predictions(int horizon)
     return predictions;
 }
 
-void Vehicle::realize_next_state(vector<Vehicle> &trajectory)
+void Vehicle::realize_next_state(Vehicle &trajectory)
 {
     // Sets state and kinematics for ego vehicle using the last state of the trajectory.
-    this->lane = trajectory[1].lane;
-    update(trajectory[1].x, trajectory[1].y, trajectory[1].vx, trajectory[1].vy, trajectory[1].s, trajectory[1].d);
+    this->lane = trajectory.lane;
+    update(trajectory.x, trajectory.y, trajectory.vx, trajectory.vy, trajectory.s, trajectory.d, trajectory.ax, trajectory.ay);
 }
 
 double Vehicle::get2DVelocity()
 {
     return sqrt(pow(vx, 2) + pow(vy, 2));
+}
+
+double Vehicle::get2DAcceleration()
+{
+    return sqrt(pow(ax, 2) + pow(ay, 2));
 }

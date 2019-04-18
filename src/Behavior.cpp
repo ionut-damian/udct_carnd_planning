@@ -11,10 +11,12 @@ Behavior::~Behavior()
 {
 }
 
-Trajectory* Behavior::choose_next_state(map<int, vector<Vehicle>> &predictions)
+Trajectory* Behavior::choose_next_state(Environment& environment)
 {
     vector<string> possible_states = successor_states();
     vector<Trajectory*> possible_traj;
+
+    map<int, vector<Vehicle>> &predictions = environment.generate_predictions();
 
     float min_cost = 9999;
     int min_cost_i = 0;
@@ -34,7 +36,7 @@ Trajectory* Behavior::choose_next_state(map<int, vector<Vehicle>> &predictions)
         }
     }
 
-    printf("> next state = %s\n", possible_states[min_cost_i].c_str());
+    //printf("> next state = %s\n", possible_states[min_cost_i].c_str());
 
     return possible_traj[min_cost_i];
 }

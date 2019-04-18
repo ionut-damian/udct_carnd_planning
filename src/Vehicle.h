@@ -22,10 +22,13 @@ public:
     virtual ~Vehicle();
 
     // Vehicle functions
-    void update(float x, float y, float vx, float vy, float s, float d);
+    void update(float x, float y, float vx, float vy, float s, float d, float ax, float ay, double theta);
+    void update(float x, float y, float vx, float vy, float s, float d, float ax, float ay);
+    void update(float x, float y, float vx, float vy, double theta);
     void update(float x, float y, float vx, float vy);
+    void update(float x, float y);
 
-    Vehicle predict(int t);
+    Vehicle predict(double t);
 
     bool get_vehicle_behind(map<int, vector<Vehicle>> &predictions, int lane,
         Vehicle &rVehicle);
@@ -35,9 +38,10 @@ public:
 
     vector<Vehicle> generate_predictions(int horizon = 2);
 
-    void realize_next_state(vector<Vehicle> &trajectory);
+    void realize_next_state(Vehicle &trajectory);
 
     double get2DVelocity();
+    double get2DAcceleration();
 
     // public Vehicle variables
     struct collider

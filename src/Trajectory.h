@@ -11,7 +11,7 @@ public:
     Trajectory();
     ~Trajectory();
 
-    Vehicle get_kinematics(Vehicle& vehicle, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
+    Vehicle get_kinematics(Vehicle& vehicle, int lane, double t, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
 
     vector<Vehicle> waypoints;
 

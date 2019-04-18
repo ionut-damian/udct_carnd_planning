@@ -13,6 +13,8 @@ public:
 
     void updateVehicle(int id, float x, float y, float vx, float vy, float s, float d);
 
+    map<int, vector<Vehicle> > generate_predictions();
+
     map<int, Vehicle> vehicles;
 };
 

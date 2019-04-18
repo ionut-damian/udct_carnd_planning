@@ -5,6 +5,7 @@
 #include "Vehicle.h"
 #include "Trajectory.h"
 #include "Map.h"
+#include "Environment.h"
 
 class Behavior
 {
@@ -16,7 +17,7 @@ public:
 
     vector<string> successor_states();
 
-    Trajectory* choose_next_state(map<int, vector<Vehicle>> &predictions);
+    Trajectory* choose_next_state(Environment& environment);
 
     float target_speed, max_acceleration, goal_s;
     int lanes_available, goal_lane;
