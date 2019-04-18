@@ -96,7 +96,7 @@ KeepLaneTrajectory::KeepLaneTrajectory(const Vehicle& vehicle, map<int, vector<V
 PrepLaneChangeTrajectory::PrepLaneChangeTrajectory(const Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions)
 {
     this->target_lane = target_lane;
-    float spot_size = 60;
+    float spot_size = 30;
     float reduced_speed = 18;
 
     vector<double> anchors_x, anchors_y;

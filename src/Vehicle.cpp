@@ -56,6 +56,12 @@ void Vehicle::update(float x, float y, float vx, float vy, float s, float d, flo
     this->ay = ay;
 
     this->lane = floor(this->d / LANE_WIDTH);
+
+    //snap lane to min or max to force car to go back
+    if (this->lane < 0)
+        this->lane = 0;
+    if (this->lane > NUM_LANES - 1)
+        this->lane = NUM_LANES - 1;
 }
 
 void Vehicle::update(float x, float y, float vx, float vy, float s, float d, float ax, float ay)
@@ -74,6 +80,12 @@ void Vehicle::update(float x, float y, float vx, float vy, float s, float d, flo
     this->ay = ay;
 
     this->lane = (int)this->d / (int)LANE_WIDTH;
+
+    //snap lane to min or max to force car to go back
+    if (this->lane < 0)
+       this->lane = 0;
+    if (this->lane > NUM_LANES - 1)
+        this->lane = NUM_LANES - 1;
 }
 
 void Vehicle::update(float x, float y, float vx, float vy, double theta)
@@ -91,26 +103,6 @@ void Vehicle::update(float x, float y, float vx, float vy)
     vector<double> new_frenet = getFrenet(x, y, this->theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
 
     update(x, y, vx, vy, new_frenet[0], new_frenet[1], 0, 0);
-}
-
-void Vehicle::update(float x, float y)
-{
-    theta = atan2(y - this->y, x - this->x);
-    if (theta < 0)
-        theta = 360 - abs(theta);
-
-    vector<double> new_frenet = getFrenet(x, y, this->theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
-
-    this->x = x;
-    this->y = y;
-    //this->vx = x - this->x;
-    //this->vy = y - this->y;
-    this->s = new_frenet[0];
-    this->d = new_frenet[1];
-
-    this->lane = (int)this->d / (int)LANE_WIDTH;
-
-    //update(x, y, vx, vy, new_frenet[0], new_frenet[1]);
 }
 
 Vehicle Vehicle::predict(double t) const

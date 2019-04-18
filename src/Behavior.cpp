@@ -44,21 +44,6 @@ Trajectory* Behavior::choose_next_state(map<int, vector<Vehicle>> &predictions)
     
     //transition
     state = possible_states[min_cost_i];
-
-    //if (state.compare("KL") == 0)
-    //{
-    //    change_lane_left_target = -1;
-    //    change_lane_right_target = -1;
-    //}
-    //else if (state.compare("LCL") == 0)
-    //{
-    //    change_lane_left_target = ego.lane - 1;
-    //}
-    //else if (state.compare("LCR") == 0)
-    //{
-    //    change_lane_right_target = ego.lane + 1;
-    //}
-
     ego.vx = possible_traj[min_cost_i]->velocity * cos(ego.theta);
     ego.vy = possible_traj[min_cost_i]->velocity * sin(ego.theta);
 
@@ -107,7 +92,7 @@ vector<string> Behavior::successor_states()
     else if (state.compare("LCL") == 0)
     {
         states.push_back("KL");
-        if (lane != 0)
+        if (lane != 0 && lane != change_lane_left_target)
         {
             states.push_back("LCL");
         }
@@ -115,7 +100,7 @@ vector<string> Behavior::successor_states()
     else if (state.compare("LCR") == 0)
     {
         states.push_back("KL");
-        if (lane != NUM_LANES - 1)
+        if (lane != NUM_LANES - 1 && lane != change_lane_right_target)
         {
             states.push_back("LCR");
         }

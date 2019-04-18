@@ -13,9 +13,10 @@ using std::string;
 using std::vector;
 
 const float COLLISION = 0.6;
-const float EFFICIENCY = 0.0;
+const float LANE_CHANGE = 0.6;
+const float EFFICIENCY = 0.4;
 const float DISTANCE = 0.4;
-const float LAZY = 0.1;
+const float LAZY = 0.07;
 
 float lazyness_cost(const Vehicle& ego, const Trajectory* trajectory, const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state)
 {
@@ -29,16 +30,34 @@ float lazyness_cost(const Vehicle& ego, const Trajectory* trajectory, const map<
 
 float collision_cost(const Vehicle& ego, const Trajectory* trajectory, const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state)
 {
-    //for (int i = 0; i < trajectory->waypoints_x.size(); i++)
+    for (int i = 0; i < trajectory->waypoints_x.size(), i < predictions.at(0).size(); i++)
     {
         for (map<int, vector<Vehicle>>::const_iterator it = predictions.begin(); it != predictions.end(); ++it)
         {
             int key = it->first;
-            Vehicle vehicle = it->second[0];
-            if (distance(trajectory->waypoints_x[0], trajectory->waypoints_y[0], vehicle.x, vehicle.y) < CAR_RADIUS)
+            Vehicle vehicle = it->second[i];
+            if (distance(trajectory->waypoints_x[i], trajectory->waypoints_y[i], vehicle.x, vehicle.y) < CAR_RADIUS)
             {
                 return 1;
             }
+        }
+    }
+
+    return 0;
+}
+
+float lane_change_cost(const Vehicle& ego, const Trajectory* trajectory, const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state)
+{
+    if (new_state.compare("KL") == 0)
+        return 0;
+
+    float spot_size = 30;
+    for (map<int, vector<Vehicle>>::const_iterator it = predictions.begin(); it != predictions.end(); ++it)
+    {
+        Vehicle temp_vehicle = it->second[0];
+        if (temp_vehicle.lane == intended_lane && temp_vehicle.s > ego.s - spot_size / 2 && temp_vehicle.s < ego.s + spot_size / 2)
+        {
+            return 1;
         }
     }
 
@@ -153,8 +172,8 @@ float calculate_cost(const Vehicle& ego, const map<int, vector<Vehicle>> &predic
 
     // Add additional cost functions here.
     vector<std::function<float(const Vehicle&, const Trajectory*, const map<int, vector<Vehicle>> &, int, int, string, string)
-        >> cf_list = { collision_cost, distance_to_vehicle_cost, lazyness_cost };
-    vector<float> weight_list = { COLLISION, DISTANCE, LAZY };
+        >> cf_list = { lane_change_cost, distance_to_vehicle_cost, lazyness_cost };
+    vector<float> weight_list = { LANE_CHANGE, DISTANCE, LAZY };
 
     for (int i = 0; i < cf_list.size(); ++i)
     {

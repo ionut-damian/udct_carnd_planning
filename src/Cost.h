@@ -15,6 +15,9 @@ float calculate_cost(const Vehicle& ego, const map<int, vector<Vehicle>> &predic
 float collision_cost(const Vehicle& ego, const Trajectory* trajectory,
     const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
 
+float lane_change_cost(const Vehicle& ego, const Trajectory* trajectory,
+    const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
+
 float inefficiency_cost(const Vehicle& ego, const Trajectory* trajectory,
     const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
 

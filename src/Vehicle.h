@@ -26,7 +26,6 @@ public:
     void update(float x, float y, float vx, float vy, float s, float d, float ax, float ay);
     void update(float x, float y, float vx, float vy, double theta);
     void update(float x, float y, float vx, float vy);
-    void update(float x, float y);
 
     Vehicle predict(double t) const;
 

@@ -15,8 +15,6 @@
 #include "config.h"
 #include "spline.h"
 
-#define MAX_OVERLAP_PREV_PATH 50u
-
 // for convenience
 using nlohmann::json;
 using std::string;
@@ -134,7 +132,19 @@ int main()
 
                         double car_yaw_frompath = atan2(path_last_y - path_prevlast_y, path_last_x - path_prevlast_x);
 
-                        planner.ego.update(path_last_x, path_last_y, car_vx, car_vy, end_path_s, end_path_d, 0,0, car_yaw_frompath);
+                        if (path_size == previous_path_x.size())
+                        {
+                            car_s = end_path_s;
+                            car_d = end_path_d;
+                        }
+                        else
+                        {
+                            vector<double> frenet = getFrenet(path_last_x, path_last_y, car_yaw_frompath, Map::getInstance()->points_x, Map::getInstance()->points_y);
+                            car_s = frenet[0];
+                            car_d = frenet[1];
+                        }
+
+                        planner.ego.update(path_last_x, path_last_y, car_vx, car_vy, car_s, car_d, 0,0, car_yaw_frompath);
                     }
                     else
                     {
@@ -164,7 +174,7 @@ int main()
 
 
                     //Trajectory* traj = new KeepLaneTrajectory(planner.ego, std::map<int, vector<Vehicle>>(), 10, 20);
-                    for (int i = 0; i < PREDICTION_WINDOW - previous_path_x.size(); i++)
+                    for (int i = 0; i < PREDICTION_WINDOW - path_size; i++)
                     {
                         next_x_vals.push_back(traj->waypoints_x[i]);
                         next_y_vals.push_back(traj->waypoints_y[i]);
