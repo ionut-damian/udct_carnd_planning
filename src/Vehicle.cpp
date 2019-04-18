@@ -3,6 +3,7 @@
 #include "Trajectory.h"
 #include "helpers.h"
 #include "config.h"
+#include "Map.h"
 
 #include <algorithm>
 #include <iterator>
