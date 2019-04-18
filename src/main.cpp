@@ -13,8 +13,9 @@
 #include "Environment.h"
 #include "Map.h"
 #include "config.h"
+#include "spline.h"
 
-#define MAX_OVERLAP_PREV_PATH 10u
+#define MAX_OVERLAP_PREV_PATH 50u
 
 // for convenience
 using nlohmann::json;
@@ -60,7 +61,9 @@ int main()
         map->points_dy.push_back(d_y);
     }
            
-    Behavior planner(3, 20, 10, 0, 10);    
+    Behavior planner(3, 20, 10, 0, 10);  
+    planner.ego.lane = 1;
+
     Environment environment;
 
 #ifdef _MSC_VER    
@@ -108,35 +111,36 @@ int main()
 
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
-                    //int path_size = std::min(previous_path_x.size(), MAX_OVERLAP_PREV_PATH);
-                    //for (int i = 0; i < path_size; ++i)
-                    //{
-                    //    next_x_vals.push_back(previous_path_x[i]);
-                    //    next_y_vals.push_back(previous_path_y[i]);
-                    //}
+                    int path_size = std::min(previous_path_x.size(), MAX_OVERLAP_PREV_PATH);
+                    for (int i = 0; i < path_size; ++i)
+                    {
+                        next_x_vals.push_back(previous_path_x[i]);
+                        next_y_vals.push_back(previous_path_y[i]);
+                    }
 
-                    //if (path_size != 0)
-                    //{
-                    //    car_x = previous_path_x[path_size - 1];
-                    //    car_y = previous_path_y[path_size - 1];
+                    if (path_size > 1)
+                    {
+                        double path_last_x = previous_path_x[path_size - 1];
+                        double path_last_y = previous_path_y[path_size - 1];
 
-                    //    car_vx = (car_x - previous_path_x[path_size - 2]) / TIME_PER_FRAME;
-                    //    car_vy = (car_y - previous_path_y[path_size - 2]) / TIME_PER_FRAME;
+                        double path_prevlast_x = previous_path_x[path_size - 2];
+                        double path_prevlast_y = previous_path_y[path_size - 2];
 
-                    //    car_yaw = atan2(car_y - previous_path_y[path_size - 2], car_x - previous_path_x[path_size - 2]);
-                    //    if (car_yaw < 0)
-                    //        car_yaw = 360 - abs(car_yaw);
-                    //}
+                        //car_vx = (car_x - previous_path_x[path_size - 2]) / TIME_PER_FRAME;
+                        //car_vy = (car_y - previous_path_y[path_size - 2]) / TIME_PER_FRAME;
+                        car_vx = planner.ego.vx;
+                        car_vy = planner.ego.vy;
 
-                    //printf("in: x=%.2f, y=%.2f, v=%.2f\n", car_x, car_y, car_speed);
-                    planner.ego.update(car_x, car_y, car_vx, car_vy, car_yaw);      
-                    //planner.ego.update(car_x, car_y);
+                        double car_yaw_frompath = atan2(path_last_y - path_prevlast_y, path_last_x - path_prevlast_x);
+                        //if (car_yaw < 0)
+                        //    car_yaw = 360 - abs(car_yaw);
 
-                    //if (planner.ego.theta != car_yaw)
-                    //{
-                    //    //printf("WARN: unexpected theta (%.3f != %.3f)\n", rad2deg(planner.ego.theta), rad2deg(car_yaw));
-                    //    planner.ego.theta = car_yaw;
-                    //}
+                        planner.ego.update(path_last_x, path_last_y, car_vx, car_vy, car_s, car_d, 0,0, car_yaw_frompath);
+                    }
+                    else
+                    {
+                        planner.ego.update(car_x, car_y, car_vx, car_vy, car_s, car_d, 0, 0, car_yaw);
+                    }
 
                     // Sensor Fusion Data, a list of all other cars on the same side 
                     //   of the road.
@@ -154,20 +158,91 @@ int main()
                     }
 
                     //process
+
+                    //vector<double> anchors_x, anchors_y;                    
+
+                    ////push point immediately before vehicle    
+                    //anchors_x.push_back(planner.ego.x - cos(planner.ego.theta));
+                    //anchors_y.push_back(planner.ego.y - sin(planner.ego.theta));
+
+                    ////push current point
+                    //anchors_x.push_back(planner.ego.x);
+                    //anchors_y.push_back(planner.ego.y);
+
+
+                    ////push 3 more points, once every second
+                    //double spacing = 30; //meters
+                    //for (int i = 1; i <= 3; i++)
+                    //{
+                    //    vector<double> point = getXY(planner.ego.s + spacing * i, planner.ego.lane * LANE_WIDTH + LANE_WIDTH / 2.0, Map::getInstance()->points_s, Map::getInstance()->points_x, Map::getInstance()->points_y);
+                    //    anchors_x.push_back(point[0]);
+                    //    anchors_y.push_back(point[1]);
+                    //}
+
+                    ////transform to local CS
+                    //for (int i = 0; i < anchors_x.size(); i++)
+                    //{
+                    //    double shift_x = anchors_x[i] - planner.ego.x;
+                    //    double shift_y = anchors_y[i] - planner.ego.y;
+
+                    //    anchors_x[i] = (shift_x * cos(-planner.ego.theta) - shift_y * sin(-planner.ego.theta));
+                    //    anchors_y[i] = (shift_x * sin(-planner.ego.theta) + shift_y * cos(-planner.ego.theta));
+                    //}
+
+                    ////build spline
+                    //tk::spline spl;
+                    //spl.set_points(anchors_x, anchors_y);
+
+                    ////sample spline
+                    //double last_sample_x = spacing; //only sample first part of the spline
+                    //double last_sample_y = spl(last_sample_x); //only sample first part of the spline
+                    //double dist = distance(0, 0, last_sample_x, last_sample_y);
+
+                    ////double new_velocity = computeVelocty(vehicle, vehicle.lane, TIME_PER_FRAME, )
+                    //double num_samples = dist / (TIME_PER_FRAME * 20);
+                    //double x_inc = spacing / num_samples;
+
+                    ////compute waypoints    
+                    //for (int i = 0; i < PREDICTION_WINDOW - previous_path_x.size(); i++)
+                    //{
+                    //    double x_point = x_inc * i;
+                    //    double y_point = spl(x_point);
+
+                    //    double x_point_local = x_point;
+                    //    double y_point_local = y_point;
+
+                    //    x_point = (x_point_local * cos(planner.ego.theta) - y_point_local * sin(planner.ego.theta));
+                    //    y_point = (x_point_local * sin(planner.ego.theta) + y_point_local * cos(planner.ego.theta));
+
+                    //    x_point += planner.ego.x;
+                    //    y_point += planner.ego.y;
+
+                    //    next_x_vals.push_back(x_point);
+                    //    next_y_vals.push_back(y_point);
+                    //}
+                    
+                    
                     Trajectory* traj = planner.choose_next_state(environment);
                     //planner.ego.realize_next_state(traj->waypoints[0]);
 
-                    //output
-                    json msgJson;
 
-                    for (int i = 0; i < traj->waypoints.size() - next_x_vals.size(); ++i)
+                    //Trajectory* traj = new KeepLaneTrajectory(planner.ego, std::map<int, vector<Vehicle>>(), 10, 20);
+                    for (int i = 0; i < PREDICTION_WINDOW - previous_path_x.size(); i++)
                     {
-                        next_x_vals.push_back(traj->waypoints[i].x);
-                        next_y_vals.push_back(traj->waypoints[i].y);
+                        next_x_vals.push_back(traj->waypoints_x[i]);
+                        next_y_vals.push_back(traj->waypoints_y[i]);
                     }
-                    printf("out: x=%.2f, y=%.2f, yaw_in=%.2f, yaw=%.2f, v_in=%.2f, v=%.2f\n", traj->waypoints[0].x, traj->waypoints[0].y, rad2deg(car_yaw), rad2deg(traj->waypoints[0].theta), car_speed, traj->waypoints[0].get2DVelocity());
+
+                    delete traj;
+
+
+                    //printf("out: x=%.2f, y=%.2f, yaw_in=%.2f, yaw=%.2f, v_in=%.2f, v_in_c=%.2f, v=%.2f\n", 
+                    //    traj->waypoints[0].x, traj->waypoints[0].y, 
+                    //    rad2deg(car_yaw), rad2deg(traj->waypoints[0].theta), 
+                    //    car_speed, sqrt(pow(car_vx,2) + pow(car_vy, 2)), traj->waypoints[0].get2DVelocity());
                     //printf("out: x=%.2f, y=%.2f, v=%.2f\n", traj->waypoints[10].x, traj->waypoints[10].y, traj->waypoints[10].get2DVelocity());
 
+                    json msgJson;
                     msgJson["next_x"] = next_x_vals;
                     msgJson["next_y"] = next_y_vals;
 

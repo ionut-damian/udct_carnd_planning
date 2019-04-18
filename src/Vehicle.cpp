@@ -79,8 +79,7 @@ void Vehicle::update(float x, float y, float vx, float vy, float s, float d, flo
 void Vehicle::update(float x, float y, float vx, float vy, double theta)
 {
     vector<double> new_frenet = getFrenet(x, y, theta, Map::getInstance()->points_x, Map::getInstance()->points_y);
-
-    update(x, y, vx, vy, new_frenet[0], new_frenet[1], 0, 0);
+    update(x, y, vx, vy, new_frenet[0], new_frenet[1], 0, 0, theta);
 }
 
 void Vehicle::update(float x, float y, float vx, float vy)
