@@ -95,7 +95,8 @@ int main()
                     double car_s = j[1]["s"];
                     double car_d = j[1]["d"];
                     double car_yaw = deg2rad(j[1]["yaw"]);
-                    double car_speed = (j[1]["speed"] * 1609.34) / 3600.0;
+                    double car_speed = j[1]["speed"];
+                    double car_speed = (car_speed * 1609.34) / 3600.0;
 
                     double car_vx = cos(car_yaw) * car_speed;
                     double car_vy = sin(car_yaw) * car_speed;
@@ -109,7 +110,10 @@ int main()
 
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
-                    int path_size = std::min(previous_path_x.size(), MAX_OVERLAP_PREV_PATH);
+
+                    int path_size = previous_path_x.size(); 
+                    if (path_size > MAX_OVERLAP_PREV_PATH)
+                        path_size = MAX_OVERLAP_PREV_PATH;
 
                     for (int i = 0; i < path_size; ++i)
                     {
@@ -168,7 +172,7 @@ int main()
 
                     //process      
                     double prediction_horizon = (path_size > 0) ? path_size * TIME_PER_FRAME : 1.0;
-                    std::map<int, vector<Vehicle>> &predictions = environment.generate_predictions(prediction_horizon);
+                    std::map<int, vector<Vehicle>> predictions = environment.generate_predictions(prediction_horizon);
                     Trajectory* traj = planner.choose_next_state(predictions);
                     //planner.ego.realize_next_state(traj->waypoints[0]);
 
