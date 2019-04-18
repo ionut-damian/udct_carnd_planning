@@ -11,7 +11,7 @@ Environment::~Environment()
 {
 }
 
-map<int, vector<Vehicle> > Environment::generate_predictions()
+map<int, vector<Vehicle> > Environment::generate_predictions(double horizon)
 {
     map<int, vector<Vehicle> > predictions;
     map<int, Vehicle>::iterator it = this->vehicles.begin();
@@ -19,8 +19,8 @@ map<int, vector<Vehicle> > Environment::generate_predictions()
     while (it != this->vehicles.end())
     {
         int v_id = it->first;
-        vector<Vehicle> preds = it->second.generate_predictions();
-        predictions[v_id] = preds;
+        Vehicle pred = it->second.predict(horizon);
+        predictions[v_id].push_back(pred);
         ++it;
     }
 

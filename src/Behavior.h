@@ -10,19 +10,19 @@
 class Behavior
 {
 public:
-    Behavior(int numLanes, float target_speed, float max_acceleration, int goal_lane, float goal_s);
+    Behavior();
     ~Behavior();
 
     Trajectory* generate_trajectory(string state, map<int, vector<Vehicle>> &predictions);
 
     vector<string> successor_states();
 
-    Trajectory* choose_next_state(Environment& environment);
-
-    float target_speed, max_acceleration, goal_s;
-    int lanes_available, goal_lane;
+    Trajectory* choose_next_state(map<int, vector<Vehicle>> &predictions);
 
     string state;
+    int change_lane_left_target;
+    int change_lane_right_target;
+
     Vehicle ego;
 };
 

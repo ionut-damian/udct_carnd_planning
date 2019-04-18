@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "config.h"
 
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
@@ -137,6 +138,8 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
     const vector<double> &maps_x,
     const vector<double> &maps_y)
 {
+    s = fmod(s, MAP_LENGTH);
+
     int prev_wp = -1;
 
     while (s > maps_s[prev_wp + 1] && (prev_wp < (int)(maps_s.size() - 1)))

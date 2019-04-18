@@ -61,7 +61,7 @@ int main()
         map->points_dy.push_back(d_y);
     }
            
-    Behavior planner(3, 20, 10, 0, 10);  
+    Behavior planner;  
     planner.ego.lane = 1;
 
     Environment environment;
@@ -112,6 +112,7 @@ int main()
                     vector<double> next_x_vals;
                     vector<double> next_y_vals;
                     int path_size = std::min(previous_path_x.size(), MAX_OVERLAP_PREV_PATH);
+
                     for (int i = 0; i < path_size; ++i)
                     {
                         next_x_vals.push_back(previous_path_x[i]);
@@ -132,10 +133,8 @@ int main()
                         car_vy = planner.ego.vy;
 
                         double car_yaw_frompath = atan2(path_last_y - path_prevlast_y, path_last_x - path_prevlast_x);
-                        //if (car_yaw < 0)
-                        //    car_yaw = 360 - abs(car_yaw);
 
-                        planner.ego.update(path_last_x, path_last_y, car_vx, car_vy, car_s, car_d, 0,0, car_yaw_frompath);
+                        planner.ego.update(path_last_x, path_last_y, car_vx, car_vy, end_path_s, end_path_d, 0,0, car_yaw_frompath);
                     }
                     else
                     {
@@ -157,8 +156,10 @@ int main()
                             sensor_fusion[i][6]);//d
                     }
 
-                    //process               
-                    Trajectory* traj = planner.choose_next_state(environment);
+                    //process      
+                    double prediction_horizon = (path_size > 0) ? path_size * TIME_PER_FRAME : 1.0;
+                    std::map<int, vector<Vehicle>> &predictions = environment.generate_predictions(prediction_horizon);
+                    Trajectory* traj = planner.choose_next_state(predictions);
                     //planner.ego.realize_next_state(traj->waypoints[0]);
 
 

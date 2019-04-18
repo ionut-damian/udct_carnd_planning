@@ -4,6 +4,7 @@
 
 #include "Vehicle.h"
 #include "Map.h"
+#include "config.h"
 
 class Trajectory
 {
@@ -11,39 +12,32 @@ public:
     Trajectory();
     ~Trajectory();
 
-    Vehicle get_kinematics(Vehicle& vehicle, int lane, double t, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
-    double computeVelocty(Vehicle& vehicle, int lane, double t, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
-
-    vector<Vehicle> waypoints;
+    double computeVelocty(const Vehicle& vehicle, int lane, double t, map<int, vector<Vehicle>> &predictions, float max_velocity = MAX_SPEED);
+    void buildTrajectory(const Vehicle& vehicle, vector<double> anchors_x, vector<double> anchors_y, double velocity, double trajectory_length);
 
     vector<double> waypoints_x;
     vector<double> waypoints_y;
 
     int target_lane;
-};
-
-class ConstantAccTrajectory : public Trajectory
-{
-public:
-    ConstantAccTrajectory(Vehicle& vehicle);
+    double velocity;
 };
 
 class KeepLaneTrajectory : public Trajectory
 {
 public:
-    KeepLaneTrajectory(Vehicle& vehicle, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
+    KeepLaneTrajectory(const Vehicle& vehicle, map<int, vector<Vehicle>> &predictions);
 };
 
 class PrepLaneChangeTrajectory : public Trajectory
 {
 public:
-    PrepLaneChangeTrajectory(Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
+    PrepLaneChangeTrajectory(const Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions);
 };
 
 class LaneChangeTrajectory : public Trajectory
 {
 public:
-    LaneChangeTrajectory(Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions, float max_acceleration, float target_speed);
+    LaneChangeTrajectory(const Vehicle& vehicle, int target_lane, map<int, vector<Vehicle>> &predictions);
 };
 
 #endif

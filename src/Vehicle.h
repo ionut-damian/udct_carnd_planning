@@ -28,20 +28,20 @@ public:
     void update(float x, float y, float vx, float vy);
     void update(float x, float y);
 
-    Vehicle predict(double t);
+    Vehicle predict(double t) const;
 
     bool get_vehicle_behind(map<int, vector<Vehicle>> &predictions, int lane,
-        Vehicle &rVehicle);
+        Vehicle &rVehicle) const;
 
     bool get_vehicle_ahead(map<int, vector<Vehicle>> &predictions, int lane,
-        Vehicle &rVehicle);
+        Vehicle &rVehicle) const;
 
-    vector<Vehicle> generate_predictions(int horizon = 2);
+    vector<Vehicle> generate_predictions(double horizon) const;
 
     void realize_next_state(Vehicle &trajectory);
 
-    double get2DVelocity();
-    double get2DAcceleration();
+    double get2DVelocity() const;
+    double get2DAcceleration() const;
 
     // public Vehicle variables
     struct collider

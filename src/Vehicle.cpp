@@ -55,7 +55,7 @@ void Vehicle::update(float x, float y, float vx, float vy, float s, float d, flo
     this->ax = ax;
     this->ay = ay;
 
-    this->lane = (int)this->d / (int)LANE_WIDTH;
+    this->lane = floor(this->d / LANE_WIDTH);
 }
 
 void Vehicle::update(float x, float y, float vx, float vy, float s, float d, float ax, float ay)
@@ -113,7 +113,7 @@ void Vehicle::update(float x, float y)
     //update(x, y, vx, vy, new_frenet[0], new_frenet[1]);
 }
 
-Vehicle Vehicle::predict(double t)
+Vehicle Vehicle::predict(double t) const
 {
     float new_x = this->x + this->vx*t + this->ax*t*t / 2.0f;
     float new_y = this->y + this->vy*t + this->ay*t*t / 2.0f;
@@ -128,7 +128,7 @@ Vehicle Vehicle::predict(double t)
 }
 
 bool Vehicle::get_vehicle_behind(map<int, vector<Vehicle>> &predictions,
-    int lane, Vehicle &rVehicle)
+    int lane, Vehicle &rVehicle) const
 {
     // Returns a true if a vehicle is found behind the current vehicle, false 
     //   otherwise. The passed reference rVehicle is updated if a vehicle is found.
@@ -152,7 +152,7 @@ bool Vehicle::get_vehicle_behind(map<int, vector<Vehicle>> &predictions,
 }
 
 bool Vehicle::get_vehicle_ahead(map<int, vector<Vehicle>> &predictions,
-    int lane, Vehicle &rVehicle)
+    int lane, Vehicle &rVehicle) const
 {
     // Returns a true if a vehicle is found ahead of the current vehicle, false 
     //   otherwise. The passed reference rVehicle is updated if a vehicle is found.
@@ -175,7 +175,7 @@ bool Vehicle::get_vehicle_ahead(map<int, vector<Vehicle>> &predictions,
     return found_vehicle;
 }
 
-vector<Vehicle> Vehicle::generate_predictions(int horizon)
+vector<Vehicle> Vehicle::generate_predictions(double horizon) const
 {
     // Generates predictions for non-ego vehicles to be used in trajectory 
     //   generation for the ego vehicle.
@@ -195,12 +195,12 @@ void Vehicle::realize_next_state(Vehicle &trajectory)
     update(trajectory.x, trajectory.y, trajectory.vx, trajectory.vy, trajectory.s, trajectory.d, trajectory.ax, trajectory.ay);
 }
 
-double Vehicle::get2DVelocity()
+double Vehicle::get2DVelocity() const
 {
     return sqrt(pow(vx, 2) + pow(vy, 2));
 }
 
-double Vehicle::get2DAcceleration()
+double Vehicle::get2DAcceleration() const
 {
     return sqrt(pow(ax, 2) + pow(ay, 2));
 }

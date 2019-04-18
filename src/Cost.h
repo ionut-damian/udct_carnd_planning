@@ -9,20 +9,19 @@ using std::map;
 using std::string;
 using std::vector;
 
-float calculate_cost(const map<int, vector<Vehicle>> &predictions,
-    const Trajectory* trajectory, int goal_lane, float goal_s, float target_speed);
+float calculate_cost(const Vehicle& ego, const map<int, vector<Vehicle>> &predictions,
+    const Trajectory* trajectory, int intended_lane, int final_lane, string old_state, string new_state);
 
-float goal_distance_cost(const Trajectory* trajectory,
-    const map<int, vector<Vehicle>> &predictions,
-    map<string, float> &data);
+float collision_cost(const Vehicle& ego, const Trajectory* trajectory,
+    const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
 
-float inefficiency_cost(const Trajectory* trajectory,
-    const map<int, vector<Vehicle>> &predictions,
-    map<string, float> &data);
+float inefficiency_cost(const Vehicle& ego, const Trajectory* trajectory,
+    const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
 
-float lane_speed(const map<int, vector<Vehicle>> &predictions, int lane);
+float lazyness_cost(const Vehicle& ego, const Trajectory* trajectory,
+    const map<int, vector<Vehicle>> &predictions, int intended_lane, int final_lane, string old_state, string new_state);
 
-map<string, float> get_helper_data(const Trajectory* trajectory,
-    const map<int, vector<Vehicle>> &predictions, int goal_lane, int goal_s, float target_speed);
+bool nearest_vehicle(double ego_s, const map<int, vector<Vehicle>> &predictions, int lane, Vehicle& vehicle, float horizon);
+float lane_speed(double ego_s, const map<int, vector<Vehicle>> &predictions, int lane);
 
 #endif  // COST_H
