@@ -96,7 +96,7 @@ int main()
                     double car_d = j[1]["d"];
                     double car_yaw = deg2rad(j[1]["yaw"]);
                     double car_speed = j[1]["speed"];
-                    double car_speed = (car_speed * 1609.34) / 3600.0;
+                    car_speed = (car_speed * 1609.34) / 3600.0;
 
                     double car_vx = cos(car_yaw) * car_speed;
                     double car_vy = sin(car_yaw) * car_speed;
