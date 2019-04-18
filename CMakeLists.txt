@@ -8,7 +8,13 @@ set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 
 set(sources src/main.cpp)
-
+set(sources src/Behavior.cpp)
+set(sources src/Cost.cpp)
+set(sources src/Environment.cpp)
+set(sources src/helpers.cpp)
+set(sources src/Map.cpp)
+set(sources src/Trajectory.cpp)
+set(sources src/Vehicle.cpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
 
