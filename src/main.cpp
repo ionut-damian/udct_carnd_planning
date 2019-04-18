@@ -157,71 +157,7 @@ int main()
                             sensor_fusion[i][6]);//d
                     }
 
-                    //process
-
-                    //vector<double> anchors_x, anchors_y;                    
-
-                    ////push point immediately before vehicle    
-                    //anchors_x.push_back(planner.ego.x - cos(planner.ego.theta));
-                    //anchors_y.push_back(planner.ego.y - sin(planner.ego.theta));
-
-                    ////push current point
-                    //anchors_x.push_back(planner.ego.x);
-                    //anchors_y.push_back(planner.ego.y);
-
-
-                    ////push 3 more points, once every second
-                    //double spacing = 30; //meters
-                    //for (int i = 1; i <= 3; i++)
-                    //{
-                    //    vector<double> point = getXY(planner.ego.s + spacing * i, planner.ego.lane * LANE_WIDTH + LANE_WIDTH / 2.0, Map::getInstance()->points_s, Map::getInstance()->points_x, Map::getInstance()->points_y);
-                    //    anchors_x.push_back(point[0]);
-                    //    anchors_y.push_back(point[1]);
-                    //}
-
-                    ////transform to local CS
-                    //for (int i = 0; i < anchors_x.size(); i++)
-                    //{
-                    //    double shift_x = anchors_x[i] - planner.ego.x;
-                    //    double shift_y = anchors_y[i] - planner.ego.y;
-
-                    //    anchors_x[i] = (shift_x * cos(-planner.ego.theta) - shift_y * sin(-planner.ego.theta));
-                    //    anchors_y[i] = (shift_x * sin(-planner.ego.theta) + shift_y * cos(-planner.ego.theta));
-                    //}
-
-                    ////build spline
-                    //tk::spline spl;
-                    //spl.set_points(anchors_x, anchors_y);
-
-                    ////sample spline
-                    //double last_sample_x = spacing; //only sample first part of the spline
-                    //double last_sample_y = spl(last_sample_x); //only sample first part of the spline
-                    //double dist = distance(0, 0, last_sample_x, last_sample_y);
-
-                    ////double new_velocity = computeVelocty(vehicle, vehicle.lane, TIME_PER_FRAME, )
-                    //double num_samples = dist / (TIME_PER_FRAME * 20);
-                    //double x_inc = spacing / num_samples;
-
-                    ////compute waypoints    
-                    //for (int i = 0; i < PREDICTION_WINDOW - previous_path_x.size(); i++)
-                    //{
-                    //    double x_point = x_inc * i;
-                    //    double y_point = spl(x_point);
-
-                    //    double x_point_local = x_point;
-                    //    double y_point_local = y_point;
-
-                    //    x_point = (x_point_local * cos(planner.ego.theta) - y_point_local * sin(planner.ego.theta));
-                    //    y_point = (x_point_local * sin(planner.ego.theta) + y_point_local * cos(planner.ego.theta));
-
-                    //    x_point += planner.ego.x;
-                    //    y_point += planner.ego.y;
-
-                    //    next_x_vals.push_back(x_point);
-                    //    next_y_vals.push_back(y_point);
-                    //}
-                    
-                    
+                    //process               
                     Trajectory* traj = planner.choose_next_state(environment);
                     //planner.ego.realize_next_state(traj->waypoints[0]);
 

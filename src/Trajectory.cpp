@@ -38,7 +38,6 @@ KeepLaneTrajectory::KeepLaneTrajectory(Vehicle& vehicle, map<int, vector<Vehicle
     anchors_x.push_back(vehicle.x);
     anchors_y.push_back(vehicle.y);
 
-
     //push 3 more points, once every second
     double spacing = 30; //meters
     for (int i = 1; i <= 3; i++)
@@ -48,24 +47,14 @@ KeepLaneTrajectory::KeepLaneTrajectory(Vehicle& vehicle, map<int, vector<Vehicle
         anchors_y.push_back(point[1]);
     }  
 
-    //transform to local CS
-    for (int i = 0; i < anchors_x.size(); i++)
-    {
-        double shift_x = anchors_x[i] - vehicle.x;
-        double shift_y = anchors_y[i] - vehicle.y;
-
-        anchors_x[i] = (shift_x * cos(-vehicle.theta) - shift_y * sin(-vehicle.theta));
-        anchors_y[i] = (shift_x * sin(-vehicle.theta) + shift_y * cos(-vehicle.theta));
-    }
-
     //build spline
     tk::spline spl;
     spl.set_points(anchors_x, anchors_y);
 
     //sample spline
-    double last_sample_x = spacing; //only sample first part of the spline
+    double last_sample_x = vehicle.x + spacing; //only sample first part of the spline
     double last_sample_y = spl(last_sample_x); //only sample first part of the spline
-    double dist = distance(0, 0, last_sample_x, last_sample_y);
+    double dist = distance(vehicle.x, vehicle.y, last_sample_x, last_sample_y);
 
     //double new_velocity = computeVelocty(vehicle, vehicle.lane, TIME_PER_FRAME, )
     double num_samples = dist / (TIME_PER_FRAME * target_speed);
@@ -74,17 +63,8 @@ KeepLaneTrajectory::KeepLaneTrajectory(Vehicle& vehicle, map<int, vector<Vehicle
     //compute waypoints    
     for (int i = 1; i <= PREDICTION_WINDOW; i++)
     {      
-        double x_point = x_inc * i;
+        double x_point = vehicle.x + x_inc * i;
         double y_point = spl(x_point);
-
-        double x_point_local = x_point;
-        double y_point_local = y_point;
-
-        x_point = (x_point_local * cos(vehicle.theta) - y_point_local * sin(vehicle.theta));
-        y_point = (x_point_local * sin(vehicle.theta) + y_point_local * cos(vehicle.theta));
-
-        x_point += vehicle.x;
-        y_point += vehicle.y;
 
         waypoints_x.push_back(x_point);
         waypoints_y.push_back(y_point);
