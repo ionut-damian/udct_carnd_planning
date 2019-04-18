@@ -1,10 +1,10 @@
 #include "Map.h"
 
-Map* Map::instance = NULL;
+Map* Map::instance = 0;
 
 Map* Map::getInstance()
 {
-    if (instance == NULL)
+    if (instance == 0)
     {
         instance = new Map();
     }

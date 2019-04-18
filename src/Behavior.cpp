@@ -1,5 +1,6 @@
 #include "Behavior.h"
 #include "Cost.h"
+#include <math.h>
 
 
 Behavior::Behavior()
